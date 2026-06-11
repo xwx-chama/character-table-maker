@@ -113,6 +113,12 @@ function generationColor(name){const t=String(name||''); const m=t.match(/(\d+)\
 function groupLabelText(name){const t=String(name||'').trim(); return t || '未設定';}
 function wrapLabelLines(text, maxWidth, fontSize=24){
   const s=String(text||'').trim()||'未設定';
+
+  // 画面表示とPNG出力で改行がズレやすいので、
+  // 「11世代」「21世代」のような表記は明示的に分割する。
+  const generationMatch=s.match(/^(\d+)\s*世代$/);
+  if(generationMatch)return [generationMatch[1],'世','代'];
+
   const c=document.createElement('canvas'); const ctx=c.getContext('2d');
   ctx.font=`900 ${fontSize}px system-ui,sans-serif`;
   const lines=[]; let line='';
@@ -344,7 +350,7 @@ function drawStackedGenLabel(ctx,name,cx,cy,maxH){
 }
 function drawSingleLineFit(ctx,text,cx,cy,maxW){let size=12;const t=displayNameText(text);ctx.font=`700 ${size}px system-ui,sans-serif`;while(ctx.measureText(t).width>maxW&&size>7){size--;ctx.font=`700 ${size}px system-ui,sans-serif`;}ctx.fillText(t,cx,cy)}
 function exportJson(){try{setStatus('JSONを書き出しています…');const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});offerDownload((state.title||'character_table')+'.json',blob,'JSON');isDirty=false;}catch(e){console.error(e); alert('JSON保存に失敗しました')}}
-function normalizeSettings(){state.settings=Object.assign({cellW:126,cellH:150,nameH:30,labelW:59,wrapCols:7},state.settings||{});state.settings.cellW=126;state.settings.cellH=Math.max(90,Number(state.settings.cellH)||150);state.settings.labelW=Math.max(42,Number(state.settings.labelW)||86);state.settings.wrapCols=Math.max(1,Number(state.settings.wrapCols)||7)}
+function normalizeSettings(){state.settings=Object.assign({cellW:126,cellH:150,nameH:30,labelW:59,wrapCols:7},state.settings||{});state.settings.cellW=126;state.settings.cellH=Math.max(90,Number(state.settings.cellH)||150);state.settings.labelW=Math.max(42,Number(state.settings.labelW)||59);state.settings.wrapCols=Math.max(1,Number(state.settings.wrapCols)||7)}
 function normalizeGenerationColors(){normalizeSettings();for(const g of state.generations){if(g.autoColor===undefined)g.autoColor=true;if(g.autoColor!==false)g.color=generationColor(g.name);if(!g.color)g.color=generationColor(g.name)}}
 function importJson(file){const r=new FileReader();r.onload=()=>{try{isImporting=true;state=JSON.parse(r.result);normalizeGenerationColors();selected=null;markDirty();render();isImporting=false;isDirty=false;}catch(e){isImporting=false;alert('JSONを読み込めませんでした')}};r.readAsText(file)}
 $('addGenBtn').onclick=addGen;$('addCharBtn').onclick=addChar;$('addCharToGen').onclick=()=>{const g=state.generations.find(x=>x.id===$('genSelect').value);if(!g){addGen();return;}const ch=c('新規');g.chars.push(ch);selected=ch.id;markDirty();render();};$('exportPng').onclick=exportPng;$('exportJson').onclick=exportJson;$('optimizeAll').onclick=optimizeAllImages;$('checkSize').onclick=()=>updateStats(true);$('sampleBtn').onclick=()=>{if(confirm('初期状態に戻します。未保存の内容は消えます。')){isDirty=false;location.reload()}};
