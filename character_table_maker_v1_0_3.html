@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Character Table Maker</title>
+<style>
+  :root{
+    --bg:#f7f3ed;
+    --paper:#fffdfa;
+    --ink:#3a2f2a;
+    --muted:#7a6b62;
+    --line:#3a2f2a;
+    --accent:#75b987;
+    --accent2:#f3c9d8;
+    --danger:#d85f6a;
+    --shadow:0 8px 24px rgba(80,50,30,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+  header{padding:16px 20px;background:#fff8f4;border-bottom:2px solid #e8ded7;position:sticky;top:0;z-index:10}
+  h1{font-size:20px;margin:0 0 6px}.sub{font-size:13px;color:var(--muted)}
+  .wrap{display:grid;grid-template-columns:310px 1fr;gap:18px;padding:18px;align-items:start}
+  .panel{background:var(--paper);border:2px solid #eadfd7;border-radius:18px;padding:14px;box-shadow:var(--shadow);position:sticky;top:88px;max-height:calc(100vh - 105px);overflow:auto}
+  .panel h2{font-size:16px;margin:4px 0 10px}.group{border-top:1px dashed #d7c8be;padding-top:12px;margin-top:12px}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px} input[type="text"],input[type="number"],select{width:100%;padding:9px;border:1px solid #cabbb2;border-radius:10px;background:white;color:var(--ink)} input[type="color"]{width:100%;height:42px;border:1px solid #cabbb2;border-radius:10px;background:white;padding:4px;cursor:pointer}
+  input[type="range"]{width:100%}.row{display:flex;gap:8px}.row>*{flex:1}
+  button,.fileBtn{border:0;border-radius:999px;background:var(--accent);color:white;padding:9px 13px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.12);display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:13px;line-height:1.2;text-align:center}
+  button:hover,.fileBtn:hover{filter:brightness(.97)} button:active,.fileBtn:active{transform:translateY(1px);box-shadow:0 2px 0 rgba(0,0,0,.12)}
+  button.secondary{background:#b9aaa1}.danger{background:var(--danger)!important}.pink{background:#e89ab5!important}.small{font-size:12px;padding:7px 10px}.wide{width:100%;margin-top:8px} input[type="file"]{display:none}.hint{font-size:12px;line-height:1.6;color:var(--muted);background:#fff6fa;border:1px solid #f0d4df;border-radius:12px;padding:10px;margin-top:10px}.miniHint{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px}.emptyStart{padding:34px 42px;min-width:520px;text-align:center;color:var(--muted);background:#fffdfa}.emptyStart b{display:block;color:var(--ink);font-size:18px;margin-bottom:8px}.inlineAdd{position:absolute;right:8px;top:8px;background:#e89ab5;z-index:5;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+  .boardWrap{overflow:auto;padding-bottom:30px}.board{display:inline-block;background:var(--paper);border:3px solid var(--line);box-shadow:var(--shadow);padding:0;margin-bottom:20px;transform-origin:top left}
+  .titleBar{height:42px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;font-weight:800;font-size:20px;border-bottom:3px solid var(--line);background:#fff;position:relative;min-width:100%}
+  .titleText{grid-column:2;text-align:center;padding:0 12px;white-space:nowrap}.creatorText{grid-column:3;justify-self:end;font-size:13px;font-weight:700;padding-right:14px;white-space:nowrap;color:#4a3d36}
+  .genRow{display:grid;border-bottom:3px solid var(--line);min-height:150px;position:relative}.genRow:last-child{border-bottom:0}.genLabel{border-right:3px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:900;background:#fff;color:white;text-shadow:0 2px 0 rgba(0,0,0,.13);line-height:1.05;letter-spacing:.02em;cursor:grab;user-select:none;padding:6px;text-align:center;overflow:hidden}.genLabelText{display:block;max-width:100%;white-space:normal;word-break:break-all;overflow-wrap:anywhere}.genLabel:active{cursor:grabbing}.genRow.dragging{opacity:.55}.genRow.dropBefore{box-shadow:inset 0 6px 0 #ff9ec0}.genRow.dropAfter{box-shadow:inset 0 -6px 0 #ff9ec0}.genLabel .genNum{font-size:28px}.genLabel .genChar{font-size:24px}
+  .cells{display:grid;align-items:stretch;background:white}.card{width:126px;min-height:150px;border-right:3px solid var(--line);border-bottom:3px solid var(--line);display:grid;grid-template-rows:1fr 30px;background:white;position:relative}.card.selected{outline:4px solid #ff9ec0;outline-offset:-4px;z-index:2}.imgBox{position:relative;overflow:hidden;background:#f2eee9;cursor:grab;touch-action:none}.imgBox:active{cursor:grabbing}.imgBox img{position:absolute;left:50%;top:50%;width:100%;height:auto;user-select:none;pointer-events:none;transform-origin:center center}.placeholder{height:100%;display:flex;align-items:center;justify-content:center;color:#b0a29a;font-size:12px;text-align:center;padding:8px}.name{border-top:3px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:12px;line-height:1.15;padding:2px 4px;white-space:nowrap;overflow:hidden;cursor:text}.name span{display:block;max-width:100%;white-space:nowrap}.nameEdit{width:100%;height:100%;border:0;padding:0 3px;text-align:center;font-weight:700;background:#fff7fb;color:var(--ink);outline:2px solid #ff9ec0;font-size:12px}.cardTools{position:absolute;right:4px;top:4px;display:none;gap:3px}.card:hover .cardTools,.card.selected .cardTools{display:flex}.toolMini{padding:3px 7px;font-size:11px;background:rgba(58,47,42,.75);box-shadow:none}.ghost{opacity:.45}.emptyGen{padding:25px;color:#9a8b82}.selectedInfo{font-size:13px;line-height:1.5;padding:8px;background:#f7fff7;border:1px solid #cae8cf;border-radius:12px}.kbd{font-family:ui-monospace,monospace;background:#eee3dc;border-radius:6px;padding:1px 5px}.palette{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.swatch{height:26px;border-radius:9px;border:2px solid rgba(0,0,0,.15);cursor:pointer}.footerNote{font-size:12px;color:var(--muted);padding:10px 0 0}.zoomView{display:flex;align-items:center;gap:8px}.zoomView input{flex:1}.xyGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.buttonGrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.buttonGrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.buttonGrid3 button,.buttonGrid2 button{width:100%;min-width:0;padding:8px 6px;white-space:nowrap}.buttonGrid2 .danger{padding:8px 6px}.saveStatus{font-size:12px;line-height:1.5;color:var(--muted);background:#f6fbff;border:1px solid #d7eaf5;border-radius:12px;padding:10px;margin-top:10px;white-space:pre-wrap}.downloadLinks{display:grid;gap:8px;margin-top:10px}.downloadLinks a{display:block;text-decoration:none;background:#fff5ea;border:1px solid #efcfab;color:#6a4e2b;padding:10px 12px;border-radius:12px;font-weight:700}
+  @media(max-width:850px){.wrap{grid-template-columns:1fr}.panel{position:relative;top:0;max-height:none}.boardWrap{max-width:100vw}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Character Table Maker</h1>
+  <div class="sub">画像はブラウザ内だけで扱います。グループとキャラを追加して、画像を選ぶだけで一覧表を作れます。</div>
+</header>
+<div class="wrap">
+  <aside class="panel">
+    <h2>操作</h2>
+    <div class="row">
+      <button id="addGenBtn">＋グループ</button>
+      <button id="addCharBtn" class="pink">＋キャラ</button>
+    </div>
+    <div class="group">
+      <label>表タイトル</label><input id="titleInput" type="text" value="" placeholder="タイトルを入力" />
+      <label>作った人</label><input id="creatorInput" type="text" value="" placeholder="名前を入力" />
+      <div class="row">
+        <div><label>セル高さ</label><input id="cellH" type="number" value="150" min="90" max="320"></div>
+        <div><label>グループタブ幅</label><input id="labelW" type="number" value="59" min="42" max="240"></div>
+      </div>
+      <button id="resetCellSize" class="secondary wide">表示サイズリセット</button>
+      <label>何列で折り返すか</label><input id="wrapCols" type="number" value="7" min="1" max="20">
+      <label>画面上の表示倍率</label>
+      <div class="zoomView"><input id="viewZoom" type="range" min="40" max="130" value="100"><span id="viewZoomText">100%</span></div>
+    </div>
+    <div class="group">
+      <h2>選択中のキャラ</h2>
+      <div id="selectedInfo" class="selectedInfo">キャラをクリックすると編集できます。</div>
+      <label>名前</label><input id="editName" type="text" disabled>
+      <label>グループ</label><select id="editGen" disabled></select>
+      <label class="fileBtn wide" for="imgInput">画像を選ぶ／差し替え</label><input id="imgInput" type="file" accept="image/*" disabled>
+      <label>拡大率 <span id="scaleText">100%</span></label><input id="editScale" type="range" min="20" max="800" value="100" disabled>
+      <div class="xyGrid">
+        <div><label>X位置</label><input id="editX" type="number" step="1" disabled></div>
+        <div><label>Y位置</label><input id="editY" type="number" step="1" disabled></div>
+      </div>
+      <div class="buttonGrid3">
+        <button id="moveLeft" class="secondary small" disabled>←</button>
+        <button id="moveRight" class="secondary small" disabled>→</button>
+        <button id="resetImg" class="secondary small" disabled>リセット</button>
+      </div>
+      <div class="buttonGrid2">
+        <button id="cropSelected" class="secondary small" disabled>枠外切り取り</button>
+        <button id="deleteChar" class="danger small" disabled>キャラ削除</button>
+      </div>
+    </div>
+    <div class="group">
+      <h2>グループ設定</h2>
+      <label>グループを選択</label><select id="genSelect"></select>
+      <label>グループ名</label><input id="genName" type="text">
+      <label>グループ色</label><input id="genColor" type="color" value="#e99a9a">
+      <button id="addCharToGen" class="pink wide">このグループにキャラ追加</button>
+      <button id="deleteGen" class="danger wide">このグループを削除</button>
+    </div>
+    <div class="group">
+      <h2>保存・出力</h2>
+      <div class="row"><button id="exportJson">JSON保存</button><label class="fileBtn" for="jsonInput">JSON読込</label></div>
+      <input id="jsonInput" type="file" accept="application/json,.json">
+      <button id="exportPng" class="wide">PNG保存</button>
+      <button id="optimizeAll" class="secondary wide">全画像を軽量化</button>
+      <button id="checkSize" class="secondary wide">サイズ確認</button>
+      <button id="sampleBtn" class="secondary wide">初期状態に戻す</button>
+      <div id="saveStatus" class="saveStatus">保存前に「全画像を軽量化」を押すと、見た目を保ったまま枠外を切り取って軽くできます。</div>
+      <div id="downloadLinks" class="downloadLinks"></div>
+      <div class="hint">画像枠をドラッグで位置調整、ホイールで拡大縮小できます。名前欄クリックで名前変更、グループ欄ドラッグでグループごと並び替えできます。保存前に「枠外切り取り」や「全画像を軽量化」を使うとかなり安定します。</div>
+      <div class="footerNote">HTML単体で動くローカルツールです。画像はサーバーに送信されません。</div>
+    </div>
+  </aside>
+  <main class="boardWrap">
+    <div id="board" class="board"></div>
+  </main>
+</div>
+<script>
+const colors=["#e99a9a","#efb07f","#ead882","#c8df8b","#94d6a6","#8fd8cf","#9fc7ea","#b1afe8","#d5a8df","#eba8c5"];
+function generationColor(name){const t=String(name||''); const m=t.match(/(\d+)\s*世代/); if(m)return colors[Number(m[1].slice(-1))%10]; return colors[0];}
+function groupLabelText(name){const t=String(name||'').trim(); return t || '未設定';}
+function wrapLabelLines(text, maxWidth, fontSize=24){
+  const s=String(text||'').trim()||'未設定';
+  const c=document.createElement('canvas'); const ctx=c.getContext('2d');
+  ctx.font=`900 ${fontSize}px system-ui,sans-serif`;
+  const lines=[]; let line='';
+  for(const ch of [...s]){
+    const test=line+ch;
+    if(line && ctx.measureText(test).width>maxWidth){lines.push(line); line=ch;}
+    else line=test;
+  }
+  if(line)lines.push(line);
+  return lines;
+}
+function generationLabelHtml(name){
+  const lines=wrapLabelLines(groupLabelText(name), Math.max(20,(state?.settings?.labelW||59)-12), 24);
+  const size=Math.max(13, Math.min(24, Math.floor(((state?.settings?.cellH||150)-12)/Math.max(1,lines.length)/1.08)));
+  return `<span class="genLabelText" style="font-size:${size}px">${lines.map(esc).join('<br>')}</span>`;
+}
+function displayNameText(name){return String(name||'').replace(/\s+/g,'');}
+function fitFontSize(text, maxWidth, base=12, min=7){const len=[...displayNameText(text)].length||1; const approx=len*base*.95; return Math.max(min, Math.min(base, Math.floor(base*maxWidth/Math.max(maxWidth,approx))));}
+let state={title:"",creator:"",settings:{cellW:126,cellH:150,nameH:30,labelW:59,wrapCols:7},generations:[]};
+let selected=null;let drag=null;let genDragId=null;let activeDownloadUrls=[];let isDirty=false;let isImporting=false;
+function uid(){return 'id_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36)}
+function c(name){return {id:uid(),name, image:null, x:0, y:0, scale:1}}
+const $=id=>document.getElementById(id);
+function getChar(id=selected){for(const g of state.generations){const i=g.chars.findIndex(ch=>ch.id===id);if(i>=0)return {g,ch:g.chars[i],idx:i}}return null}
+function getCard(id){return document.querySelector(`.card[data-id="${id}"]`)}
+function updateCardImageTransform(id){
+  const o=getChar(id); if(!o)return;
+  const img=getCard(id)?.querySelector('.imgBox img');
+  if(img) img.style.transform=`translate(calc(-50% + ${o.ch.x}px), calc(-50% + ${o.ch.y}px)) scale(${o.ch.scale})`;
+}
+function syncSelectedControlsOnly(){
+  const o=getChar(); if(!o)return;
+  $('editScale').value=Math.round(o.ch.scale*100);
+  $('scaleText').textContent=Math.round(o.ch.scale*100)+'%';
+  $('editX').value=Math.round(o.ch.x);
+  $('editY').value=Math.round(o.ch.y);
+}
+
+function markDirty(){ if(!isImporting) isDirty=true; }
+window.addEventListener('beforeunload', e=>{
+  if(!isDirty)return;
+  e.preventDefault();
+  e.returnValue='';
+});
+
+function syncInputs(){
+  state.settings.cellW=126;state.settings.wrapCols=Number(state.settings.wrapCols)||7;$('titleInput').value=state.title||'';$('creatorInput').value=state.creator||'';$('cellH').value=state.settings.cellH;$('labelW').value=state.settings.labelW;$('wrapCols').value=state.settings.wrapCols;
+  $('editGen').innerHTML=state.generations.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+  $('genSelect').innerHTML=state.generations.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+  if(!state.generations.some(g=>g.id===$('genSelect').value)&&state.generations[0])$('genSelect').value=state.generations[0].id;
+  updateSelectedPanel(); updateGenPanel(); updateStats();
+}
+function render(){
+  const b=$('board');b.style.transform=`scale(${$('viewZoom').value/100})`; $('viewZoomText').textContent=$('viewZoom').value+'%';
+  const hasTitle=String(state.title||'').trim(); const hasCreator=String(state.creator||'').trim();
+  b.innerHTML=(hasTitle||hasCreator)?`<div class="titleBar"><div class="titleText">${esc(state.title||'')}</div><div class="creatorText">${hasCreator?'作った人：'+esc(state.creator):''}</div></div>`:'';
+  if(!state.generations.length){
+    const empty=document.createElement('div');
+    empty.className='emptyStart';
+    empty.innerHTML='<b>まずは「＋グループ」から始めます</b>左の操作パネルでグループを作って、キャラと画像を追加してください。';
+    b.appendChild(empty);
+  }
+  for(const g of state.generations){
+    const cols=Math.max(1, Number(state.settings.wrapCols)||7);
+    const rowCount=Math.max(1, Math.ceil(g.chars.length/cols));
+    const rowH=rowCount*state.settings.cellH;
+    const row=document.createElement('div');row.className='genRow';row.style.gridTemplateColumns=`${state.settings.labelW}px ${cols*state.settings.cellW}px`;row.style.minHeight=rowH+'px';row.dataset.gid=g.id;
+    const label=document.createElement('div');label.className='genLabel';label.style.background=g.color;label.innerHTML=generationLabelHtml(g.name);label.title='ドラッグでグループの順番を変更';label.draggable=true;label.addEventListener('dragstart',e=>startGenDrag(e,g.id));label.addEventListener('dragend',clearGenDropMarks);row.appendChild(label);
+    row.addEventListener('dragover',e=>overGenRow(e,g.id,row));
+    row.addEventListener('dragleave',()=>{row.classList.remove('dropBefore','dropAfter')});
+    row.addEventListener('drop',e=>dropGenRow(e,g.id,row));
+    const cells=document.createElement('div');cells.className='cells';cells.style.gridTemplateColumns=`repeat(${cols}, ${state.settings.cellW}px)`;cells.style.gridAutoRows=state.settings.cellH+'px';cells.style.width=(cols*state.settings.cellW)+'px';
+    if(!g.chars.length){const e=document.createElement('div');e.className='emptyGen';e.textContent='このグループは空です';cells.appendChild(e)}
+    for(const ch of g.chars) cells.appendChild(cardEl(ch));
+    const add=document.createElement('button');add.className='inlineAdd small';add.textContent='＋';add.title='このグループにキャラ追加';add.onclick=()=>{const ch=c('新規');g.chars.push(ch);selected=ch.id;markDirty();render()};
+    row.appendChild(cells);row.appendChild(add);b.appendChild(row);
+  }
+  syncInputs();
+}
+function selectCharNoRender(id, el){
+  selected=id;
+  updateSelectedPanel();
+  document.querySelectorAll('.card.selected').forEach(c=>c.classList.remove('selected'));
+  const card=el ? el.closest('.card') : document.querySelector(`.card[data-id="${id}"]`);
+  if(card)card.classList.add('selected');
+}
+function cardEl(ch){
+  const card=document.createElement('div');card.className='card'+(selected===ch.id?' selected':'');card.style.width=state.settings.cellW+'px';card.style.minHeight=state.settings.cellH+'px';card.style.gridTemplateRows=`1fr ${state.settings.nameH}px`;card.dataset.id=ch.id;
+  const imgBox=document.createElement('div');imgBox.className='imgBox';
+  if(ch.image){const img=document.createElement('img');img.src=ch.image;img.style.transform=`translate(calc(-50% + ${ch.x}px), calc(-50% + ${ch.y}px)) scale(${ch.scale})`;imgBox.appendChild(img)}
+  else {const p=document.createElement('div');p.className='placeholder';p.textContent='画像なし\nダブルクリックで選択';imgBox.appendChild(p)}
+  imgBox.addEventListener('pointerdown',e=>startDrag(e,ch.id));
+  imgBox.addEventListener('click',e=>{e.stopPropagation();selectCharNoRender(ch.id,imgBox)});
+  imgBox.addEventListener('wheel',e=>wheelZoom(e,ch.id),{passive:false});
+  imgBox.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();selectCharNoRender(ch.id,imgBox);setTimeout(()=>$('imgInput').click(),0)});
+  imgBox.addEventListener('dragover',e=>{e.preventDefault();imgBox.classList.add('ghost')});
+  imgBox.addEventListener('dragleave',()=>imgBox.classList.remove('ghost'));
+  imgBox.addEventListener('drop',async e=>{e.preventDefault();imgBox.classList.remove('ghost');selected=ch.id;const file=e.dataTransfer.files&&e.dataTransfer.files[0];if(file&&file.type.startsWith('image/')){ch.image=await readFileAsDataURL(file);markDirty();render();}});
+  card.addEventListener('click',()=>selectCharNoRender(ch.id,card));
+  const tools=document.createElement('div');tools.className='cardTools';tools.innerHTML='<button class="toolMini" title="左へ">←</button><button class="toolMini" title="右へ">→</button>';
+  tools.children[0].onclick=(e)=>{e.stopPropagation();moveChar(ch.id,-1)};tools.children[1].onclick=(e)=>{e.stopPropagation();moveChar(ch.id,1)};
+  const name=document.createElement('div');name.className='name';name.title='クリックで名前を変更';const nameSpan=document.createElement('span');nameSpan.textContent=displayNameText(ch.name);nameSpan.style.fontSize=fitFontSize(ch.name,state.settings.cellW-8)+'px';name.appendChild(nameSpan);name.addEventListener('click',e=>{e.stopPropagation();selected=ch.id;editNameInline(ch,name)});
+  card.appendChild(imgBox);card.appendChild(tools);card.appendChild(name);return card;
+}
+function updateSelectedPanel(){
+  const o=getChar(); const dis=!o; ['editName','editGen','imgInput','editScale','editX','editY','moveLeft','moveRight','resetImg','cropSelected','deleteChar'].forEach(id=>$(id).disabled=dis);
+  if(!o){$('selectedInfo').textContent='キャラをクリックすると編集できます。';$('editName').value='';$('editX').value='';$('editY').value='';$('editScale').value=100;return}
+  $('selectedInfo').textContent=`選択中：${displayNameText(o.ch.name)}`;
+  $('editName').value=o.ch.name;$('editGen').value=o.g.id;$('editScale').value=Math.round(o.ch.scale*100);$('scaleText').textContent=Math.round(o.ch.scale*100)+'%';$('editX').value=Math.round(o.ch.x);$('editY').value=Math.round(o.ch.y);
+}
+function updateGenPanel(){const g=state.generations.find(x=>x.id===$('genSelect').value)||state.generations[0]; if(!g){$('genName').value='';$('genColor').value=colors[0];return;} $('genSelect').value=g.id;if(document.activeElement!==$('genName'))$('genName').value=g.name;$('genColor').value=g.color||generationColor(g.name);}
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+function startDrag(e,id){selected=id; const o=getChar(id); if(!o)return; selectCharNoRender(id,e.currentTarget); drag={id,startX:e.clientX,startY:e.clientY,baseX:o.ch.x,baseY:o.ch.y}; e.currentTarget.setPointerCapture(e.pointerId);}
+window.addEventListener('pointermove',e=>{if(!drag)return; const o=getChar(drag.id); if(!o)return; const z=$('viewZoom').value/100; o.ch.x=drag.baseX+(e.clientX-drag.startX)/z; o.ch.y=drag.baseY+(e.clientY-drag.startY)/z; markDirty(); updateCardImageTransform(drag.id); syncSelectedControlsOnly();});
+window.addEventListener('pointerup',()=>{if(drag){syncSelectedControlsOnly();} drag=null;});
+function wheelZoom(e,id){e.preventDefault(); selected=id; const o=getChar(id); if(!o)return; const delta=e.deltaY<0?1.06:0.94; o.ch.scale=Math.max(.2,Math.min(8,o.ch.scale*delta)); markDirty(); updateCardImageTransform(id); syncSelectedControlsOnly();}
+function moveChar(id,dir){const o=getChar(id);if(!o)return;const ni=o.idx+dir;if(ni<0||ni>=o.g.chars.length)return;[o.g.chars[o.idx],o.g.chars[ni]]=[o.g.chars[ni],o.g.chars[o.idx]];markDirty();render();}
+function editNameInline(ch, box){
+  if(box.querySelector('input'))return;
+  const before=ch.name;
+  box.innerHTML='';
+  const input=document.createElement('input');
+  input.className='nameEdit';
+  input.value=ch.name;
+  box.appendChild(input);
+  input.focus();
+  input.select();
+  const commit=()=>{ch.name=input.value.trim()||'新規';markDirty();render();};
+  input.addEventListener('click',e=>e.stopPropagation());
+  input.addEventListener('pointerdown',e=>e.stopPropagation());
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit()} if(e.key==='Escape'){ch.name=before;render()}});
+  input.addEventListener('blur',commit,{once:true});
+}
+function clearGenDropMarks(){
+  genDragId=null;
+  document.querySelectorAll('.genRow').forEach(r=>r.classList.remove('dragging','dropBefore','dropAfter'));
+}
+function startGenDrag(e,gid){
+  genDragId=gid;
+  const row=e.currentTarget.closest('.genRow');
+  if(row)row.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',gid)}catch(err){}
+}
+function overGenRow(e,targetId,row){
+  if(!genDragId||genDragId===targetId)return;
+  e.preventDefault();
+  const rect=row.getBoundingClientRect();
+  const before=e.clientY<rect.top+rect.height/2;
+  row.classList.toggle('dropBefore',before);
+  row.classList.toggle('dropAfter',!before);
+  e.dataTransfer.dropEffect='move';
+}
+function dropGenRow(e,targetId,row){
+  if(!genDragId||genDragId===targetId)return;
+  e.preventDefault();
+  const from=state.generations.findIndex(g=>g.id===genDragId);
+  let to=state.generations.findIndex(g=>g.id===targetId);
+  if(from<0||to<0)return clearGenDropMarks();
+  const rect=row.getBoundingClientRect();
+  const insertAfter=e.clientY>=rect.top+rect.height/2;
+  const [g]=state.generations.splice(from,1);
+  if(from<to)to--;
+  state.generations.splice(to+(insertAfter?1:0),0,g);
+  markDirty();
+  clearGenDropMarks();
+  render();
+}
+
+function nextGenerationName(){
+  const nums=state.generations.map(g=>{const m=String(g.name).match(/\d+/g);return m?Number(m[m.length-1]):NaN}).filter(Number.isFinite);
+  return state.generations.length?`グループ${state.generations.length+1}`:'グループ1';
+}
+function addGen(){const name=nextGenerationName();const g={id:uid(),name,color:generationColor(name),autoColor:true,chars:[]};state.generations.push(g);markDirty();render();$('genSelect').value=g.id;updateGenPanel();setTimeout(()=>{$('genName').focus();$('genName').select();},0);}
+function addChar(){if(!state.generations.length)addGen(); let g=state.generations[0]; if(selected){const o=getChar(); if(o)g=o.g} const ch=c('新規'); g.chars.push(ch); selected=ch.id;markDirty();render();}
+function readFileAsDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})}
+function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function loadImage(src){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>res(img);img.onerror=rej;img.src=src})}
+function setStatus(msg){$("saveStatus").textContent=msg;}
+function clearDownloadLinks(){for(const u of activeDownloadUrls){try{URL.revokeObjectURL(u)}catch(e){}} activeDownloadUrls=[]; $("downloadLinks").innerHTML="";}
+function offerDownload(name,blob,label){clearDownloadLinks();const url=URL.createObjectURL(blob);activeDownloadUrls.push(url);const a=document.createElement("a");a.href=url;a.download=name;a.textContent=(label||name)+' を保存';a.title='自動保存されない時はここをクリック';$("downloadLinks").appendChild(a);try{const auto=a.cloneNode();auto.style.display='none';document.body.appendChild(auto);auto.click();auto.remove();}catch(e){} setStatus(`保存ファイルを準備しました。自動で保存されない時は下のリンクをクリックしてください。\n${name} / ${(blob.size/1024/1024).toFixed(2)} MB`);}
+function stateJsonSize(){try{return new Blob([JSON.stringify(state)]).size}catch(e){return 0}}
+function imageCounts(){let total=0, withImage=0; for(const g of state.generations){for(const ch of g.chars){total++; if(ch.image)withImage++;}} return {total,withImage};}
+function updateStats(showSize=false){
+  const c=imageCounts();
+  const base='保存前に「全画像を軽量化」を押すと、見た目を保ったまま枠外を切り取って軽くできます。';
+  const sizeText=showSize ? ` / JSON推定 ${(stateJsonSize()/1024/1024).toFixed(2)} MB` : '';
+  $("saveStatus").textContent = `${base}\n現在: ${state.generations.length}グループ / ${c.total}キャラ / 画像あり ${c.withImage}件${sizeText}`;
+}
+async function cropCharacterImage(ch, quality=.96){if(!ch.image)return false; normalizeSettings(); const s=state.settings; const imgH=s.cellH-s.nameH; const img=await loadImage(ch.image); const factor=4; const canvas=document.createElement('canvas'); canvas.width=s.cellW*factor; canvas.height=imgH*factor; const ctx=canvas.getContext('2d'); ctx.scale(factor,factor); const ratio=s.cellW/img.width; const dw=img.width*ratio*ch.scale; const dh=img.height*ratio*ch.scale; const dx=s.cellW/2-dw/2+ch.x; const dy=imgH/2-dh/2+ch.y; ctx.clearRect(0,0,s.cellW,imgH); ctx.drawImage(img,dx,dy,dw,dh); let out; try{ out=canvas.toDataURL('image/webp',quality); if(!out.startsWith('data:image/webp')) throw new Error('webp unsupported'); }catch(e){ out=canvas.toDataURL('image/png'); } ch.image=out; ch.x=0; ch.y=0; ch.scale=1; markDirty(); return true;}
+async function cropSelectedImage(){const o=getChar(); if(!o||!o.ch.image)return; setStatus('選択中の画像を軽量化しています…'); try{await cropCharacterImage(o.ch,.96); render(); setStatus('選択中の画像を枠内で切り取って軽量化しました。'); updateStats();}catch(e){console.error(e); alert('画像の軽量化に失敗しました'); updateStats();}}
+async function optimizeAllImages(){const chars=[]; for(const g of state.generations){for(const ch of g.chars){if(ch.image)chars.push(ch)}} if(!chars.length){alert('画像があるキャラがいません'); return;} if(!confirm(`全${chars.length}件の画像を、現在見えている範囲で切り取って軽量化します。\nこの処理後は、元画像の枠外には戻せません。`)) return; setStatus(`全画像を軽量化しています… 0 / ${chars.length}`); for(let i=0;i<chars.length;i++){await cropCharacterImage(chars[i], .96); setStatus(`全画像を軽量化しています… ${i+1} / ${chars.length}`); if((i+1)%5===0){render(); await new Promise(r=>setTimeout(r,0));}} render(); setStatus(`全${chars.length}件の画像を軽量化しました。`); updateStats();}
+
+async function exportPng(){
+  try{
+    setStatus('PNGを書き出しています…');
+    const s=state.settings,line=3; const hasTitle=String(state.title||'').trim(); const hasCreator=String(state.creator||'').trim(); const titleH=(hasTitle||hasCreator)?42:0; const cols=Math.max(1, Number(s.wrapCols)||7);
+    const rowHeights=state.generations.map(g=>Math.max(1, Math.ceil(g.chars.length/cols))*s.cellH);
+    const usedCols=Math.max(1, Math.min(cols, Math.max(1,...state.generations.map(g=>g.chars.length))));
+    const w=s.labelW+usedCols*s.cellW+line*2; const h=titleH+rowHeights.reduce((a,b)=>a+b,0)+line*2;
+    const canvas=document.createElement('canvas');canvas.width=w*2;canvas.height=h*2;const ctx=canvas.getContext('2d');ctx.scale(2,2);ctx.fillStyle='#fffdfa';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#3a2f2a';ctx.lineWidth=line;
+    ctx.strokeRect(line/2,line/2,w-line,h-line);ctx.textBaseline='middle';ctx.fillStyle='#3a2f2a';if(titleH){ctx.textAlign='center';ctx.font='800 20px system-ui,sans-serif';ctx.fillText(state.title||'',w/2,line+titleH/2);ctx.textAlign='right';ctx.font='700 13px system-ui,sans-serif';if(hasCreator)ctx.fillText('作った人：'+state.creator,w-14,line+titleH/2);ctx.beginPath();ctx.moveTo(0,titleH+line);ctx.lineTo(w,titleH+line);ctx.stroke();}
+    let y=titleH+line;
+    for(let gi=0; gi<state.generations.length; gi++){
+      const g=state.generations[gi]; const rowH=rowHeights[gi];
+      ctx.fillStyle=g.color;ctx.fillRect(line,y,s.labelW,rowH);ctx.fillStyle='white';drawStackedGenLabel(ctx,g.name,line+s.labelW/2,y+rowH/2,rowH-10);
+      ctx.strokeStyle='#3a2f2a';ctx.strokeRect(line/2,y,s.labelW+line/2,rowH);
+      for(let i=0;i<g.chars.length;i++){
+        const ch=g.chars[i]; const col=i%cols; const r=Math.floor(i/cols); if(col>=usedCols)continue; const x=line+s.labelW+col*s.cellW; const cy=y+r*s.cellH;
+        ctx.fillStyle='white';ctx.fillRect(x,cy,s.cellW,s.cellH);ctx.strokeRect(x,cy,s.cellW,s.cellH); const imgH=s.cellH-s.nameH;
+        ctx.save();ctx.beginPath();ctx.rect(x+line/2,cy+line/2,s.cellW-line,imgH-line);ctx.clip();ctx.fillStyle='#f2eee9';ctx.fillRect(x+line/2,cy+line/2,s.cellW-line,imgH-line);
+        if(ch.image){try{const img=await loadImage(ch.image);const baseW=s.cellW;const ratio=baseW/img.width;const dw=img.width*ratio*ch.scale;const dh=img.height*ratio*ch.scale;ctx.drawImage(img,x+s.cellW/2-dw/2+ch.x,cy+imgH/2-dh/2+ch.y,dw,dh)}catch(e){console.warn('画像描画失敗', ch.name, e)}}
+        ctx.restore();ctx.beginPath();ctx.moveTo(x,cy+imgH);ctx.lineTo(x+s.cellW,cy+imgH);ctx.stroke();ctx.fillStyle='#3a2f2a';drawSingleLineFit(ctx,ch.name,x+s.cellW/2,cy+imgH+s.nameH/2,s.cellW-8);
+      }
+      y+=rowH;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    }
+    const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('PNGの作成に失敗しました')),'image/png'));
+    offerDownload((state.title||'character_table')+'.png',blob,'PNG');
+  }catch(e){console.error(e); alert('PNG保存に失敗しました。先に「全画像を軽量化」してから再度お試しください。'); updateStats();}
+}
+function drawStackedGenLabel(ctx,name,cx,cy,maxH){
+  const maxW=Math.max(20,(state.settings.labelW||59)-12);
+  const lines=wrapLabelLines(groupLabelText(name), maxW, 24);
+  const size=Math.max(13, Math.min(24, Math.floor(maxH/Math.max(1,lines.length)/1.08)));
+  const lineH=size*1.08;
+  let y=cy-(lineH*lines.length)/2+lineH/2;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${size}px system-ui,sans-serif`;
+  for(const line of lines){ctx.fillText(line,cx,y,maxW); y+=lineH;}
+}
+function drawSingleLineFit(ctx,text,cx,cy,maxW){let size=12;const t=displayNameText(text);ctx.font=`700 ${size}px system-ui,sans-serif`;while(ctx.measureText(t).width>maxW&&size>7){size--;ctx.font=`700 ${size}px system-ui,sans-serif`;}ctx.fillText(t,cx,cy)}
+function exportJson(){try{setStatus('JSONを書き出しています…');const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});offerDownload((state.title||'character_table')+'.json',blob,'JSON');isDirty=false;}catch(e){console.error(e); alert('JSON保存に失敗しました')}}
+function normalizeSettings(){state.settings=Object.assign({cellW:126,cellH:150,nameH:30,labelW:59,wrapCols:7},state.settings||{});state.settings.cellW=126;state.settings.cellH=Math.max(90,Number(state.settings.cellH)||150);state.settings.labelW=Math.max(42,Number(state.settings.labelW)||86);state.settings.wrapCols=Math.max(1,Number(state.settings.wrapCols)||7)}
+function normalizeGenerationColors(){normalizeSettings();for(const g of state.generations){if(g.autoColor===undefined)g.autoColor=true;if(g.autoColor!==false)g.color=generationColor(g.name);if(!g.color)g.color=generationColor(g.name)}}
+function importJson(file){const r=new FileReader();r.onload=()=>{try{isImporting=true;state=JSON.parse(r.result);normalizeGenerationColors();selected=null;markDirty();render();isImporting=false;isDirty=false;}catch(e){isImporting=false;alert('JSONを読み込めませんでした')}};r.readAsText(file)}
+$('addGenBtn').onclick=addGen;$('addCharBtn').onclick=addChar;$('addCharToGen').onclick=()=>{const g=state.generations.find(x=>x.id===$('genSelect').value);if(!g){addGen();return;}const ch=c('新規');g.chars.push(ch);selected=ch.id;markDirty();render();};$('exportPng').onclick=exportPng;$('exportJson').onclick=exportJson;$('optimizeAll').onclick=optimizeAllImages;$('checkSize').onclick=()=>updateStats(true);$('sampleBtn').onclick=()=>{if(confirm('初期状態に戻します。未保存の内容は消えます。')){isDirty=false;location.reload()}};
+$('jsonInput').onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$('imgInput').onchange=async e=>{const o=getChar();if(o&&e.target.files[0]){o.ch.image=await readFileAsDataURL(e.target.files[0]);markDirty();render()} e.target.value=''};
+$('titleInput').oninput=e=>{state.title=e.target.value;markDirty();render()};$('creatorInput').oninput=e=>{state.creator=e.target.value;markDirty();render()};['cellH','labelW','wrapCols'].forEach(id=>$(id).oninput=e=>{state.settings[id]=Number(e.target.value)||state.settings[id];markDirty();render()});$('resetCellSize').onclick=()=>{state.settings.cellW=126;state.settings.cellH=150;state.settings.labelW=59;markDirty();render()};$('viewZoom').oninput=render;
+$('editName').oninput=e=>{const o=getChar();if(o){o.ch.name=e.target.value;markDirty();const span=getCard(o.ch.id)?.querySelector('.name span'); if(span){span.textContent=displayNameText(o.ch.name);span.style.fontSize=fitFontSize(o.ch.name,state.settings.cellW-8)+'px';} $('selectedInfo').textContent=`選択中：${displayNameText(o.ch.name)}`;}};$('editGen').onchange=e=>{const o=getChar();const ng=state.generations.find(g=>g.id===e.target.value);if(o&&ng&&ng!==o.g){o.g.chars.splice(o.idx,1);ng.chars.push(o.ch);markDirty();render()}};$('editScale').oninput=e=>{const o=getChar();if(o){o.ch.scale=Number(e.target.value)/100;markDirty();$('scaleText').textContent=e.target.value+'%';updateCardImageTransform(o.ch.id);}};$('editX').oninput=e=>{const o=getChar();if(o){o.ch.x=Number(e.target.value)||0;markDirty();updateCardImageTransform(o.ch.id);}};$('editY').oninput=e=>{const o=getChar();if(o){o.ch.y=Number(e.target.value)||0;markDirty();updateCardImageTransform(o.ch.id);}};$('resetImg').onclick=()=>{const o=getChar();if(o){o.ch.x=0;o.ch.y=0;o.ch.scale=1;markDirty();updateCardImageTransform(o.ch.id);syncSelectedControlsOnly();}};$('cropSelected').onclick=cropSelectedImage;$('deleteChar').onclick=()=>{const o=getChar();if(o&&confirm('このキャラを削除しますか？')){o.g.chars.splice(o.idx,1);selected=null;markDirty();render()}};$('moveLeft').onclick=()=>moveChar(selected,-1);$('moveRight').onclick=()=>moveChar(selected,1);
+$('genSelect').onchange=updateGenPanel;
+function applyGenNameInput(){const g=state.generations.find(x=>x.id===$('genSelect').value);if(g){g.name=$('genName').value;if(g.autoColor!==false)g.color=generationColor(g.name);markDirty();render();$('genSelect').value=g.id;}}
+$('genName').onchange=applyGenNameInput;
+$('genName').onblur=applyGenNameInput;
+$('genColor').oninput=e=>{const g=state.generations.find(x=>x.id===$('genSelect').value);if(g){g.color=e.target.value;g.autoColor=false;markDirty();render();$('genSelect').value=g.id;}};
+$('deleteGen').onclick=()=>{const g=state.generations.find(x=>x.id===$('genSelect').value);if(g&&confirm('このグループと中のキャラを削除しますか？')){state.generations=state.generations.filter(x=>x!==g);selected=null;markDirty();render()}};
+render();
+</script>
+</body>
+</html>
