@@ -103,7 +103,7 @@
       <div class="footerNote">HTML単体で動くローカルツールです。画像はサーバーに送信されません。</div>
     </div>
   </aside>
-  <main class="boardWrap">
+  <main class="boardWrap" id="boardWrap">
     <div id="board" class="board"></div>
   </main>
 </div>
@@ -149,7 +149,7 @@ function fitFontSize(text, maxWidth, base=16, min=7){
   return size;
 }
 let state={title:"",creator:"",settings:{cellW:126,cellH:150,nameH:30,labelW:59,wrapCols:7},generations:[]};
-let selected=null;let drag=null;let genDragId=null;let activeDownloadUrls=[];let isDirty=false;let isImporting=false;
+let selected=null;let drag=null;let genDragId=null;let activeWheelId=null;let activeDownloadUrls=[];let isDirty=false;let isImporting=false;
 function uid(){return 'id_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36)}
 function c(name){return {id:uid(),name, image:null, x:0, y:0, scale:1}}
 const $=id=>document.getElementById(id);
@@ -222,13 +222,13 @@ function cardEl(ch){
   if(ch.image){const img=document.createElement('img');img.src=ch.image;img.style.transform=`translate(calc(-50% + ${ch.x}px), calc(-50% + ${ch.y}px)) scale(${ch.scale})`;imgBox.appendChild(img)}
   else {const p=document.createElement('div');p.className='placeholder';p.textContent='画像なし\nダブルクリックで選択';imgBox.appendChild(p)}
   imgBox.addEventListener('pointerdown',e=>startDrag(e,ch.id));
-  imgBox.addEventListener('click',e=>{e.stopPropagation();selectCharNoRender(ch.id,imgBox)});
+  imgBox.addEventListener('click',e=>{e.stopPropagation();activeWheelId=ch.id;selectCharNoRender(ch.id,imgBox)});
   imgBox.addEventListener('wheel',e=>wheelZoom(e,ch.id),{passive:false});
-  imgBox.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();selectCharNoRender(ch.id,imgBox);setTimeout(()=>$('imgInput').click(),0)});
+  imgBox.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();activeWheelId=ch.id;selectCharNoRender(ch.id,imgBox);setTimeout(()=>$('imgInput').click(),0)});
   imgBox.addEventListener('dragover',e=>{e.preventDefault();imgBox.classList.add('ghost')});
   imgBox.addEventListener('dragleave',()=>imgBox.classList.remove('ghost'));
   imgBox.addEventListener('drop',async e=>{e.preventDefault();imgBox.classList.remove('ghost');selected=ch.id;const file=e.dataTransfer.files&&e.dataTransfer.files[0];if(file&&file.type.startsWith('image/')){ch.image=await readFileAsDataURL(file);markDirty();render();}});
-  card.addEventListener('click',()=>selectCharNoRender(ch.id,card));
+  card.addEventListener('click',()=>{activeWheelId=null;selectCharNoRender(ch.id,card)});
   const tools=document.createElement('div');tools.className='cardTools';tools.innerHTML='<button class="toolMini" title="左へ">←</button><button class="toolMini" title="右へ">→</button>';
   tools.children[0].onclick=(e)=>{e.stopPropagation();moveChar(ch.id,-1)};tools.children[1].onclick=(e)=>{e.stopPropagation();moveChar(ch.id,1)};
   const name=document.createElement('div');name.className='name';name.title='クリックで名前を変更';const nameSpan=document.createElement('span');nameSpan.textContent=displayNameText(ch.name);nameSpan.style.fontSize=fitFontSize(ch.name,state.settings.cellW-8)+'px';name.appendChild(nameSpan);name.addEventListener('click',e=>{e.stopPropagation();selected=ch.id;editNameInline(ch,name)});
@@ -245,7 +245,18 @@ function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','
 function startDrag(e,id){selected=id; const o=getChar(id); if(!o)return; selectCharNoRender(id,e.currentTarget); drag={id,startX:e.clientX,startY:e.clientY,baseX:o.ch.x,baseY:o.ch.y}; e.currentTarget.setPointerCapture(e.pointerId);}
 window.addEventListener('pointermove',e=>{if(!drag)return; const o=getChar(drag.id); if(!o)return; const z=$('viewZoom').value/100; o.ch.x=drag.baseX+(e.clientX-drag.startX)/z; o.ch.y=drag.baseY+(e.clientY-drag.startY)/z; markDirty(); updateCardImageTransform(drag.id); syncSelectedControlsOnly();});
 window.addEventListener('pointerup',()=>{if(drag){syncSelectedControlsOnly();} drag=null;});
-function wheelZoom(e,id){e.preventDefault(); selected=id; const o=getChar(id); if(!o)return; const delta=e.deltaY<0?1.06:0.94; o.ch.scale=Math.max(.2,Math.min(8,o.ch.scale*delta)); markDirty(); updateCardImageTransform(id); syncSelectedControlsOnly();}
+function wheelZoom(e,id){
+  if(activeWheelId!==id) return;
+  e.preventDefault();
+  selected=id;
+  const o=getChar(id);
+  if(!o)return;
+  const delta=e.deltaY<0?1.06:0.94;
+  o.ch.scale=Math.max(.2,Math.min(8,o.ch.scale*delta));
+  markDirty();
+  updateCardImageTransform(id);
+  syncSelectedControlsOnly();
+}
 function moveChar(id,dir){const o=getChar(id);if(!o)return;const ni=o.idx+dir;if(ni<0||ni>=o.g.chars.length)return;[o.g.chars[o.idx],o.g.chars[ni]]=[o.g.chars[ni],o.g.chars[o.idx]];markDirty();render();}
 function editNameInline(ch, box){
   if(box.querySelector('input'))return;
@@ -366,8 +377,8 @@ function normalizeGenerationColors(){normalizeSettings();for(const g of state.ge
 function importJson(file){const r=new FileReader();r.onload=()=>{try{isImporting=true;state=JSON.parse(r.result);normalizeGenerationColors();selected=null;markDirty();render();isImporting=false;isDirty=false;}catch(e){isImporting=false;alert('JSONを読み込めませんでした')}};r.readAsText(file)}
 $('addGenBtn').onclick=addGen;$('addCharBtn').onclick=addChar;$('addCharToGen').onclick=()=>{const g=state.generations.find(x=>x.id===$('genSelect').value);if(!g){addGen();return;}const ch=c('新規');g.chars.push(ch);selected=ch.id;markDirty();render();};$('exportPng').onclick=exportPng;$('exportJson').onclick=exportJson;$('optimizeAll').onclick=optimizeAllImages;$('checkSize').onclick=()=>updateStats(true);$('sampleBtn').onclick=()=>{if(confirm('初期状態に戻します。未保存の内容は消えます。')){isDirty=false;location.reload()}};
 $('jsonInput').onchange=e=>e.target.files[0]&&importJson(e.target.files[0]);$('imgInput').onchange=async e=>{const o=getChar();if(o&&e.target.files[0]){o.ch.image=await readFileAsDataURL(e.target.files[0]);markDirty();render()} e.target.value=''};
-$('titleInput').oninput=e=>{state.title=e.target.value;markDirty();render()};$('creatorInput').oninput=e=>{state.creator=e.target.value;markDirty();render()};['cellH','labelW','wrapCols'].forEach(id=>$(id).oninput=e=>{state.settings[id]=Number(e.target.value)||state.settings[id];markDirty();render()});$('resetCellSize').onclick=()=>{state.settings.cellW=126;state.settings.cellH=150;state.settings.labelW=59;markDirty();render()};$('viewZoom').oninput=render;
-$('editName').oninput=e=>{const o=getChar();if(o){o.ch.name=e.target.value;markDirty();const span=getCard(o.ch.id)?.querySelector('.name span'); if(span){span.textContent=displayNameText(o.ch.name);span.style.fontSize=fitFontSize(o.ch.name,state.settings.cellW-8)+'px';} $('selectedInfo').textContent=`選択中：${displayNameText(o.ch.name)}`;}};$('editGen').onchange=e=>{const o=getChar();const ng=state.generations.find(g=>g.id===e.target.value);if(o&&ng&&ng!==o.g){o.g.chars.splice(o.idx,1);ng.chars.push(o.ch);markDirty();render()}};$('editScale').oninput=e=>{const o=getChar();if(o){o.ch.scale=Number(e.target.value)/100;markDirty();$('scaleText').textContent=e.target.value+'%';updateCardImageTransform(o.ch.id);}};$('editX').oninput=e=>{const o=getChar();if(o){o.ch.x=Number(e.target.value)||0;markDirty();updateCardImageTransform(o.ch.id);}};$('editY').oninput=e=>{const o=getChar();if(o){o.ch.y=Number(e.target.value)||0;markDirty();updateCardImageTransform(o.ch.id);}};$('resetImg').onclick=()=>{const o=getChar();if(o){o.ch.x=0;o.ch.y=0;o.ch.scale=1;markDirty();updateCardImageTransform(o.ch.id);syncSelectedControlsOnly();}};$('cropSelected').onclick=cropSelectedImage;$('deleteChar').onclick=()=>{const o=getChar();if(o&&confirm('このキャラを削除しますか？')){o.g.chars.splice(o.idx,1);selected=null;markDirty();render()}};$('moveLeft').onclick=()=>moveChar(selected,-1);$('moveRight').onclick=()=>moveChar(selected,1);
+$('titleInput').oninput=e=>{activeWheelId=null;state.title=e.target.value;markDirty();render()};$('creatorInput').oninput=e=>{activeWheelId=null;state.creator=e.target.value;markDirty();render()};['cellH','labelW','wrapCols'].forEach(id=>$(id).oninput=e=>{activeWheelId=null;state.settings[id]=Number(e.target.value)||state.settings[id];markDirty();render()});$('resetCellSize').onclick=()=>{state.settings.cellW=126;state.settings.cellH=150;state.settings.labelW=59;markDirty();render()};$('viewZoom').oninput=render;
+$('editName').oninput=e=>{activeWheelId=null;const o=getChar();if(o){o.ch.name=e.target.value;markDirty();const span=getCard(o.ch.id)?.querySelector('.name span'); if(span){span.textContent=displayNameText(o.ch.name);span.style.fontSize=fitFontSize(o.ch.name,state.settings.cellW-8)+'px';} $('selectedInfo').textContent=`選択中：${displayNameText(o.ch.name)}`;}};$('editGen').onchange=e=>{activeWheelId=null;const o=getChar();const ng=state.generations.find(g=>g.id===e.target.value);if(o&&ng&&ng!==o.g){o.g.chars.splice(o.idx,1);ng.chars.push(o.ch);markDirty();render()}};$('editScale').oninput=e=>{const o=getChar();if(o){o.ch.scale=Number(e.target.value)/100;markDirty();$('scaleText').textContent=e.target.value+'%';updateCardImageTransform(o.ch.id);}};$('editX').oninput=e=>{const o=getChar();if(o){o.ch.x=Number(e.target.value)||0;markDirty();updateCardImageTransform(o.ch.id);}};$('editY').oninput=e=>{const o=getChar();if(o){o.ch.y=Number(e.target.value)||0;markDirty();updateCardImageTransform(o.ch.id);}};$('resetImg').onclick=()=>{activeWheelId=null;const o=getChar();if(o){o.ch.x=0;o.ch.y=0;o.ch.scale=1;markDirty();updateCardImageTransform(o.ch.id);syncSelectedControlsOnly();}};$('cropSelected').onclick=()=>{activeWheelId=null;cropSelectedImage()};$('deleteChar').onclick=()=>{activeWheelId=null;const o=getChar();if(o&&confirm('このキャラを削除しますか？')){o.g.chars.splice(o.idx,1);selected=null;markDirty();render()}};$('moveLeft').onclick=()=>{activeWheelId=null;moveChar(selected,-1)};$('moveRight').onclick=()=>{activeWheelId=null;moveChar(selected,1)};
 $('genSelect').onchange=updateGenPanel;
 function applyGenNameInput(){const g=state.generations.find(x=>x.id===$('genSelect').value);if(g){g.name=$('genName').value;if(g.autoColor!==false)g.color=generationColor(g.name);markDirty();render();$('genSelect').value=g.id;}}
 $('genName').onchange=applyGenNameInput;
